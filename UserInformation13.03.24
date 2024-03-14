@@ -1,0 +1,154 @@
+#include <algorithm>
+#include <array>
+#include <fstream>
+#include <iostream>
+#include <memory>
+#include <mutex>
+#include <pcap.h>
+#include <sstream>
+#include <string>
+#include <thread>
+#include <vector>
+
+using namespace std;
+
+// Function to execute a shell command and return the output
+std::string exec(const char *cmd) {
+  std::array<char, 128> buffer;
+  std::string result;
+  std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd, "r"), pclose);
+  if (!pipe) {
+    throw std::runtime_error("popen() failed!");
+  }
+  while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
+    result += buffer.data();
+  }
+  return result;
+}
+
+// Function to remove newline characters from a string
+void removeNewlines(std::string &str) {
+  str.erase(std::remove(str.begin(), str.end(), '\n'), str.end());
+}
+
+// Class to handle network-related functionalities
+class NetworkHandler {
+public:
+  // Function to get the user's IP address
+  static std::string getIPAddress() {
+    std::string ipAddr = exec("ip route get 1 | awk '{print $NF;exit}'");
+    removeNewlines(ipAddr);
+    return ipAddr;
+  }
+
+  // Function to get the network details
+  static std::string getNetworkDetails() {
+    std::string networkDetails =
+        exec("ip route | grep default | awk '{print $3}'");
+    removeNewlines(networkDetails);
+    return networkDetails;
+  }
+
+  // Function to get the currently used ports on the device
+  static std::vector<int> getUsedPorts() {
+    std::vector<int> usedPorts;
+    std::string netstatOutput = exec("netstat -tuln");
+    std::istringstream iss(netstatOutput);
+    std::string line;
+    while (std::getline(iss, line)) {
+      if (line.find("LISTEN") != std::string::npos) {
+        size_t pos = line.find_last_of(":");
+        if (pos != std::string::npos) {
+          int port = std::stoi(line.substr(pos + 1));
+          usedPorts.push_back(port);
+        }
+      }
+    }
+    return usedPorts;
+  }
+};
+
+// Class to handle bandwidth monitoring
+class BandwidthMonitor {
+public:
+  // Function to calculate bandwidth
+  static void monitorBandwidth() {
+    // Placeholder for bandwidth monitoring logic
+  }
+};
+
+// Class to handle packet capture
+class PacketCapture {
+public:
+  // Global variables for packet count and total bytes
+  static int packet_count;
+  static long long total_bytes;
+  static std::mutex mtx;
+
+  // Function to handle packet capture
+  static void packetCaptureHandler() {
+    // Placeholder for packet capture logic
+  }
+
+  // Packet handler function
+  static void packet_handler(u_char *userData, const struct pcap_pkthdr *pkthdr,
+                             const u_char *packet) {
+    // Increment packet counter
+    std::lock_guard<std::mutex> lock(mtx);
+    packet_count++;
+
+    // Increment total bytes
+    total_bytes += pkthdr->len;
+  }
+};
+
+// Initialize static members
+int PacketCapture::packet_count = 0;
+long long PacketCapture::total_bytes = 0;
+std::mutex PacketCapture::mtx;
+
+int main() {
+  // Display user information
+  std::cout << "User Information:" << std::endl;
+  std::cout << "IP address: " << NetworkHandler::getIPAddress() << std::endl;
+  std::cout << "Network details: " << NetworkHandler::getNetworkDetails()
+            << std::endl;
+  std::cout << "Used ports: ";
+  std::vector<int> ports = NetworkHandler::getUsedPorts();
+  for (int port : ports) {
+    std::cout << port << " ";
+  }
+  std::cout << std::endl;
+
+  char *dev;
+  char errbuf[PCAP_ERRBUF_SIZE];
+  pcap_t *handle;
+
+  // Open device for live capture
+  dev = pcap_lookupdev(errbuf);
+  if (dev == nullptr) {
+    cerr << "Couldn't find default device: " << errbuf << endl;
+    return 1;
+  }
+
+  // Open device
+  handle = pcap_open_live(dev, BUFSIZ, 1, 1000, errbuf);
+  if (handle == nullptr) {
+    cerr << "Couldn't open device " << dev << ": " << errbuf << endl;
+    return 1;
+  }
+
+  // Start bandwidth monitoring
+  std::thread bandwidth_thread(BandwidthMonitor::monitorBandwidth);
+
+  // Capture packets indefinitely
+  pcap_loop(handle, -1, PacketCapture::packet_handler, nullptr);
+
+  // Join the bandwidth monitoring thread
+  bandwidth_thread.join();
+
+  // Close the handle
+  pcap_close(handle);
+
+  return 0;
+}

@@ -1,0 +1,29 @@
+To implement this functionality, you can follow these steps:
+
+0.1 Make a Softwear bill of Materials, and look for vunerability's using Owsap tools that can show vunerabilities in the dependancys.
+
+0.2 Push to github, document well and track changes why changes in scope are occuring.
+
+0.3 Use OWASP tools for project pipeline.
+SAMM
+https://owasp.org/www-project-samm/
+Dependancy Track.
+https://owasp.org/www-project-dependency-track/
+
+1. **Display User Information**: Show the user their IP address(Working), network details(Working), and the currently used ports on their device{NEED TO FIX.
+
+2. **Ask about Previous Configuration**: Prompt the user if they want to use the previous filtering configuration. Provide options for "Yes" or "No" responses.
+
+3. **Filtering Criteria Selection**: Ask the user what they would like to filter based on: their IP address, network details, or specific ports. Present these options clearly and allow the user to select one.[FINISHED]
+
+4. **Monitoring Duration**: Prompt the user to specify how long they would like to monitor the network, either in minutes or hours. Provide options for input and validate the user's choice.
+
+5. **Handle User Responses**: Process the user's responses accordingly. If they choose to use the previous configuration, load the stored settings. Based on the selected filtering criteria, update the filtering configuration. Start monitoring the network for the specified duration.
+
+6. **Implement Monitoring Logic**: Use the selected filtering criteria to capture relevant packets during the monitoring period. Apply filters as per the user's choice and analyze the captured data.
+
+7. **Display Results**: Continuously display relevant information to the user during the monitoring process, such as the number of packets captured, bandwidth usage, and any other relevant statistics. Provide clear feedback on the applied filters and their impact on the captured packets.
+
+8. **End Monitoring**: Once the specified duration has elapsed, end the monitoring process and present a summary of the captured data and analysis to the user.
+
+By following these steps, you can create a comprehensive network analysis tool that engages the user in configuring the monitoring process according to their preferences and provides meaningful insights into the network activity.
